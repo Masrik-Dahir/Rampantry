@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: Raspberry Pi
+    runs-on: rpi
     strategy:
       matrix:
         python-version: ['3.x']

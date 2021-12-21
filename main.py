@@ -1,213 +1,141 @@
-from labpack.storage.google.drive import driveClient
+#!/usr/bin/env python3
 
-import RPi.GPIO as GPIO  # Import Raspberry Pi GPIO library
-from time import sleep  # Import the sleep function from the time module
-import os
+"""
+This is an image downloader script. It can take an input URL and download all the images from that web page.
+"""
+
+import sys
+
+import url
+
+if sys.version_info < (3, 0):
+    raise SystemError("Please use python3\n")
+
+import random
 import time
-import datetime
-import urllib2
+import urllib.parse
 
-def generate():
-    GPIO.setwarnings(False)  # Ignore warning for now
-    GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
+from config import SUPPORTED_IMAGE_ATTRIBUTES, SUPPORTED_IMAGE_TYPES
 
-    LEDPIN = 8
-    MAGNETPIN = 7
-    SWITCHPIN = 12
+try:
+    import bs4 as bs
+    import requests
+except:
+    raise ImportError("Please install beautifulsoup4 \n and requests modules for python3")
 
-    GPIO.setup(LEDPIN, GPIO.OUT, initial=GPIO.LOW)  # Set pin 8 to be an output pin and set initial value to low (off)
-    GPIO.setup(MAGNETPIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # magnet switch. Default is CLOSED
-    GPIO.setup(SWITCHPIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # tactile switch. Default is OPEN
+USER_AGENTS = [
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko)\
+Chrome/61.0.3163.91 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) \
+Chrome/61.0.3163.79 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) \
+Chrome/62.0.3202.94 Safari/537.36 OPR/49.0.2725.56"]
 
-    # GPIO.setup(8, GPIO.OUT, initial=GPIO.LOW) # Set pin 8 to be an output pin and set initial value to low (off)
-    # GPIO.setup(7, GPIO.IN, pull_up_down = GPIO.PUD_UP) #magnet switch. Default is CLOSED
-    # GPIO.setup(12, GPIO.IN, pull_up_down = GPIO.PUD_UP) #tactile switch. Default is OPEN
 
+class ImageDownloader:
+    """scans a web page for all image links and downloads the images to a folder"""
 
-    lastSensorReading = 1  # use this to stop multiple recordings for the same event
-    lastButtonReading = 0
-    buttonPushed = 0  # make sure button push isn't registerd multiple times
-    stringStatus = "NA"  #
+    def __init__(self, url: str):
+        self.url = url
+        self.domain_name = urllib.parse.urlparse(self.url).hostname
+        self.seq = 0
 
-    # on start up create a .csv file with time stamp(so you know how long it's been running)
-    now = datetime.datetime.now()  # get time
-    namestr = now.strftime("%Y-%m-%d_%H-%M-%S")
-    filename = '/home/pi/Desktop/data/' + namestr + '.csv'
-    f = open(filename, 'a+')
-    if os.stat(filename).st_size == 0:
-        f.write('Date,Time,DoorStatus\r\n')
+    def page_source(self):
+        """ tries to connect to given URL via intermediate connector """
+        print("Trying to connect to page...")
+        try:
+            req = self.intermediate_connector(self.url)
+        except:
+            try:
+                print("error reconnecting...")
+                req = self.intermediate_connector(self.url)
+            except:
+                raise ConnectionError("Check Your Internet Connection and URL")
+        # print(req)
+        return req
 
-    # input first reading - is door open or closed?
-    if GPIO.input(MAGNETPIN) == 1:  # Reading is HIGH (1), so open
-        stringStatus = "DOOR-OPEN"
-    else:
-        stringStatus = "DOOR-CLOSED"
+    @staticmethod
+    def intermediate_connector(link: str):
+        """waits for a random amount of time, uses user agents and connects to a webpage and downloads it """
+        time.sleep(random.randrange(1, 5))
+        headers = {"User-Agent": random.choice(USER_AGENTS)}
+        response = requests.get(link, headers=headers)
+        print("Connected")
+        return response.content
 
-    f.write('{0},{1},{2}%\r\n'.format(time.strftime('%m/%d/%y'), time.strftime('%H:%M'), stringStatus))
-    f.flush()
-    f.close()  # close the file until time to write again
-
-    # Declare File name
-    # file_name = '{}.{}'.format(time.strftime('%m.%d.%y'), time.strftime('%H.%M'))
-
-    # Run forever to take the rest of the readings
-    while True:
-        sleep(0.5)  # Sleep for 0.5 seconds
-        if buttonPushed == 0:  # button has not been pushed
-            # check if button is pushed
-            if GPIO.input(SWITCHPIN) == 1:  # Reading is HIGH (1), so button is NOT pushed
-                buttonPushed = 0
+    def find_images(self):
+        """scans a beautiful soup object for all image links"""
+        if self.get_file_type(self.url):
+            self.save_image(self.url, "only")
+            return None
+        source = self.page_source()
+        soup = bs.BeautifulSoup(source, 'html.parser')
+        for image in soup.find_all("img"):
+            tmp = image.get(SUPPORTED_IMAGE_ATTRIBUTES[0])
+            name = image.get("alt")
+            if tmp:
+                self.call_save(tmp, name)
             else:
-                if lastButtonReading != GPIO.input(SWITCHPIN):
-                    # stop the bouncing effect so button pushed is registered ONCE
-                    buttonPushed = 1
-            lastButtonReading = GPIO.input(SWITCHPIN)  # update it so new reading is saved
-            # check if sensor status has changed
-            if GPIO.input(MAGNETPIN) != lastSensorReading:  # current reading does not equal last reading
-                if GPIO.input(MAGNETPIN) == 1:  # Reading is HIGH (1), so open
-                    stringStatus = "DOOR-OPEN"
-                    # print("Switch Open!")
-                    GPIO.output(LEDPIN, GPIO.HIGH)  # Turn on LED for testing
-                else:
-                    stringStatus = "DOOR-CLOSED"
-                    # print("Switch Closed!")
-                    GPIO.output(LEDPIN, GPIO.LOW)  # Turn off LED
-                lastSensorReading = GPIO.input(MAGNETPIN)  # update it so new reading is saved
-                now = datetime.datetime.now()  # get time
-                print(now)
+                try:
+                    tmp = image.get(SUPPORTED_IMAGE_ATTRIBUTES[1])
+                    self.call_save(tmp, name)
+                except IndexError:
+                    pass
 
-
-                # append the csv file
-                with open(filename, "a") as f:
-                    f.write('{0},{1},{2}%\r\n'.format(time.strftime('%m/%d/%y'), time.strftime('%H:%M'), stringStatus))
-                    # don't need to flush & close here because of the 'with'
-
-            # else GPIO.input(7) == lastSensorReading:  # current reading equals last reading
-
-        else:  # button pushed, so file is being read to USB.
-            # write to USB
-            print("Button pushed!")
-
-            buttonPushed = 0
-            sleep(1)
-            # set buttn push to 0
-        print("******************")
-
-'''
-    Access Token is permanent, so be careful where you use it!
-    file_path = filename
-    drive_space = 'drive'
-'''
-def migrate(file_path, access_token, drive_space='drive'):
-
-    '''
-        a method to save a posix file architecture to google drive
-
-    NOTE:   to write to a google drive account using a non-approved app,
-            the oauth2 grantee account must also join this google group
-            https://groups.google.com/forum/#!forum/risky-access-by-unreviewed-apps
-
-    :param file_path: string with path to local file
-    :param access_token: string with oauth2 access token grant to write to google drive
-    :param drive_space: string with name of space to write to (drive, appDataFolder, photos)
-    :return: string with id of file on google drive
-    '''
-
-# construct drive client
-    import httplib2
-    from googleapiclient import discovery
-    from oauth2client.client import AccessTokenCredentials
-    google_credentials = AccessTokenCredentials(access_token, 'my-user-agent/1.0')
-    google_http = httplib2.Http()
-    google_http = google_credentials.authorize(google_http)
-    google_drive = discovery.build('drive', 'v3', http=google_http)
-    drive_client = google_drive.files()
-
-# prepare file body
-    from googleapiclient.http import MediaFileUpload
-    media_body = MediaFileUpload(filename=file_path, resumable=True)
-
-# determine file modified time
-    import os
-    from datetime import datetime
-    modified_epoch = os.path.getmtime(file_path)
-    modified_time = datetime.utcfromtimestamp(modified_epoch).isoformat()
-
-# determine path segments
-    path_segments = file_path.split(os.sep)
-
-# construct upload kwargs
-    create_kwargs = {
-        'body': {
-            'name': path_segments.pop(),
-            'modifiedTime': modified_time
-        },
-        'media_body': media_body,
-        'fields': 'id'
-    }
-
-# walk through parent directories
-    parent_id = ''
-    if path_segments:
-
-    # construct query and creation arguments
-        walk_folders = True
-        folder_kwargs = {
-            'body': {
-                'name': '',
-                'mimeType' : 'application/vnd.google-apps.folder'
-            },
-            'fields': 'id'
-        }
-        query_kwargs = {
-            'spaces': drive_space,
-            'fields': 'files(id, parents)'
-        }
-        while path_segments:
-            folder_name = path_segments.pop(0)
-            folder_kwargs['body']['name'] = folder_name
-
-    # search for folder id in existing hierarchy
-            if walk_folders:
-                walk_query = "name = '%s'" % folder_name
-                if parent_id:
-                    walk_query += "and '%s' in parents" % parent_id
-                query_kwargs['q'] = walk_query
-                response = drive_client.list(**query_kwargs).execute()
-                file_list = response.get('files', [])
+    def call_save(self, tmp, name):
+        if tmp:
+            if tmp[:1] == "/":
+                img_link = self.domain_name + tmp
             else:
-                file_list = []
-            if file_list:
-                parent_id = file_list[0].get('id')
+                img_link = tmp
+            self.seq += 1
+            print("{} image found, checking image type...".format(str(self.seq)))
+            self.save_image(img_link, name)
 
-    # or create folder
-    # https://developers.google.com/drive/v3/web/folder
-            else:
-                if not parent_id:
-                    if drive_space == 'appDataFolder':
-                        folder_kwargs['body']['parents'] = [ drive_space ]
-                    else:
-                        del folder_kwargs['body']['parents']
-                else:
-                    folder_kwargs['body']['parents'] = [parent_id]
-                response = drive_client.create(**folder_kwargs).execute()
-                parent_id = response.get('id')
-                walk_folders = False
+    @staticmethod
+    def get_file_type(img_link: str):
+        """returns the file type of image in passed image url"""
+        if "data:image/jpeg;base64" in img_link:
+            print("base64 image found:- no download support")
+            return None
+        for img_type in SUPPORTED_IMAGE_TYPES:
+            if img_type in img_link:
+                print(img_type)
+                return img_type
+        return None
 
-# add parent id to file creation kwargs
-    if parent_id:
-        create_kwargs['body']['parents'] = [parent_id]
-    elif drive_space == 'appDataFolder':
-        create_kwargs['body']['parents'] = [drive_space]
+    def save_image(self, img_link: str, name: str):
+        """connects to the image link and saves the image with the correct extension """
+        file_type = self.get_file_type(img_link)
+        if file_type != None:
+            if name is None:
+                name = str(self.seq)
+                print(name)
+            time.sleep(random.randrange(1, 5))
+            headers = {"User-Agent": random.choice(USER_AGENTS)}
+            try:
+                img_req = requests.get(img_link, stream=True, headers=headers)
+            except (requests.RequestException, requests.exceptions.InvalidURL) as e:
+                print("{}, \nTRYING TO FIX\n".format(e))
+                img_req = requests.get("http://" + img_link, stream=True, headers=headers)
+            if img_req.status_code == 200:
+                print("image downloaded, saving to file... {}".format(img_req.headers['Content-Type']))
+                with open(name + file_type, 'wb') as img_file:
+                    for chunk in img_req:
+                        img_file.write(chunk)
+                print("{} image saved".format(name))
+        else:
+            print(img_link)
+            print("not a supported image")
 
-# send create request
-    file = drive_client.create(**create_kwargs).execute()
-    file_id = file.get('id')
 
-    return file_id
+if __name__ == "__main__":
+    # a = "http://mapping.littlefreepantry.org/pantry/2704"
+
+    link = "http://mapping.littlefreepantry.org/"
+    urls = url.list_url(link)
+    for links in urls:
+        ImageDownloader(links).find_images()
 
 
-# Output
-file_name = generate()
-access_token = "#########"
-migrate(file_name,access_token)
+    # ImageDownloader(a).find_images()

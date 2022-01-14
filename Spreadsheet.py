@@ -33,13 +33,10 @@ def create_xlsx_file(file_path: str, headers: dict, items: list):
 
 def ele(url: str):
     respons = requests.get(url).content
-
     soup = BeautifulSoup(respons, 'lxml')
-
     h1tags = soup.find_all('tr')
-
     elements = []
-    remove = ['Type ', 'Address ', 'Description ', 'Contact ', 'Shipping Address ']
+    #     remove = ['Type', 'Shipping', 'Description', 'Contact', 'Address']
 
     h1tags_main = soup.find_all('h1')
 
@@ -47,13 +44,35 @@ def ele(url: str):
         phrase = singleTag.text.replace("Mini Pantry Movement", "").replace("\n", "")
         phrase = str(" ".join(phrase.split()))
         if phrase != "":
-            elements.append(phrase)
+            elements.insert(0, phrase)
 
     for singleTag in h1tags:
         phrase = str(" ".join(singleTag.text.split()))
-        for i in remove:
-            phrase = phrase.replace(i, "")
-        elements.append(phrase)
+
+        elements.append("")
+        elements.append("")
+        elements.append("")
+        elements.append("")
+
+        if "Type" in phrase[:20]:
+            elements.insert(1, phrase)
+        elif "Shipping" in phrase[:20]:
+            elements.insert(2, phrase)
+        elif "Description" in phrase[:20]:
+            elements.insert(3, phrase)
+        elif "Contact" in phrase[:20]:
+            elements.insert(4, phrase)
+
+    try:
+        if ("Description" in elements[4]):
+            elements.insert(4, elements[3])
+            elements.insert(3, "")
+    except:
+        print("An exception occurred")
+
+    #         for i in remove:
+    #             phrase = phrase.replace(i,"")
+    #         elements.append(phrase)
 
     return elements
 
@@ -66,6 +85,7 @@ def none_element(ele):
 
 
 def excel():
+    items = []
     headers = {
         'id': 'User Id',
         'name': 'Full Name',
@@ -73,7 +93,6 @@ def excel():
         'address': 'Address',
         'description': 'Description',
         'contract': 'Contract',
-        'address': 'Shipping Address',
     }
 
     urls = url()
@@ -83,11 +102,10 @@ def excel():
         elements = ele(i)
         elements = none_element(elements)
         print(elements)
+        items.append({'id': n, 'name': elements[0], 'type': elements[1], 'address': elements[2],
+                      'description': elements[3], 'contract': elements[4]})
 
+    create_xlsx_file("my-xlsx-file.xlsx", headers, items)
 
-#         items.append({'id': n, 'name': elements[0], 'type': elements[1], 'address': elements[2],
-#          'description': elements[3], 'contract': elements[4], 'address': elements[5]})
-
-#     create_xlsx_file("my-xlsx-file.xlsx", headers, items)
 
 excel()

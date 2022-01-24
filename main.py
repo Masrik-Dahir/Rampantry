@@ -62,7 +62,6 @@ class ImageDownloader:
         response = requests.get(link, headers=headers)
         print("Connected")
         return response.content
-
     def find_images(self):
         """scans a beautiful soup object for all image links"""
         if self.get_file_type(self.url):

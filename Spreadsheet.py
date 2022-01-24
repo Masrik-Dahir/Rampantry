@@ -20,6 +20,20 @@ def url():
 
     return urls
 
+def find_address(url):
+    reqs = requests.get(url)
+    soup = BeautifulSoup(reqs.text, 'html.parser')
+
+    para = ""
+    for link in soup.find_all('script'):
+        para += str(link)
+    num = para.find("center: new google.maps.LatLng")
+    precise = para[num:num + 80]
+    for i in precise:
+        if (not i.isdigit()) and (i != ','):
+            precise = precise.replace(i, "")
+    Latitude, Longitude = precise.split(",")[0], precise.split(",")[1]
+    return [Latitude, Longitude]
 
 def create_xlsx_file(file_path: str, headers: dict, items: list):
     with Workbook(file_path) as workbook:

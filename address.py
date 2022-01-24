@@ -4,10 +4,6 @@ def find(Latitude, Longitude):
     # initialize Nominatim API
     geolocator = Nominatim(user_agent="geoapiExercises")
 
-    # Latitude & Longitude input
-    Latitude = "41.124884"
-    Longitude = "-85.123452"
-
     location = geolocator.reverse(Latitude + "," + Longitude)
 
     address = location.raw['address']
@@ -26,3 +22,7 @@ def find(Latitude, Longitude):
     print('Zip Code : ', zipcode)
     print(address)
     return [street, city, state, zipcode]
+
+Latitude = "28.6973858"
+Longitude = "-81.34892219999999"
+find(Latitude, Longitude)

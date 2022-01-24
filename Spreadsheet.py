@@ -1,6 +1,7 @@
 from xlsxwriter import Workbook
 from bs4 import BeautifulSoup
 import requests
+import address
 
 
 def url():
@@ -30,8 +31,9 @@ def find_address(url):
     num = para.find("center: new google.maps.LatLng")
     precise = para[num:num + 80]
     for i in precise:
-        if (not i.isdigit()) and (i != ','):
+        if (not i.isdigit()) and (i != ',') and (i != '.') and (i != '-'):
             precise = precise.replace(i, "")
+    precise = precise.replace("..", "")
     Latitude, Longitude = precise.split(",")[0], precise.split(",")[1]
     return [Latitude, Longitude]
 
@@ -109,7 +111,12 @@ def excel():
         'description': 'Description',
         'contract': 'Contract',
         'lat': 'Latitude',
-        'lon': 'Longitude'
+        "lon": "Longitude",
+        'street': 'Street',
+        'city': 'County/Suburb/Neighbourhood/City',
+        'state': 'State',
+        'zipcode': 'Zip Code'
+
     }
 
     urls = url()[:10]
@@ -117,12 +124,24 @@ def excel():
     for i in urls:
         n += 1
         elements = ele(i)
-        elements.insert(5, find_address(i)[0])
-        elements.insert(6, find_address(i)[1])
+        Latitude = find_address(i)[0]
+        Longitude = find_address(i)[1]
+        # print(i)
+        # print(Latitude + " " + Longitude)
+        street, city, state, zipcode = address.find(Latitude, Longitude)
+
+        elements.insert(5, Latitude)
+        elements.insert(6, Longitude)
+        elements.insert(7, street)
+        elements.insert(8, city)
+        elements.insert(9, state)
+        elements.insert(10, zipcode)
+
         elements = none_element(elements)
-        print(elements)
+        # print(elements)
         items.append({'id': n, 'name': elements[0], 'type': elements[1], 'address': elements[2],
-                      'description': elements[3], 'contract': elements[4], 'lat': elements[5], 'lon': elements[6]})
+                      'description': elements[3], 'contract': elements[4], 'lat': elements[5], 'lon': elements[6],
+                      'street': elements[7], 'city': elements[8], 'state': elements[9], 'zipcode': elements[10]})
 
     create_xlsx_file("my-xlsx-file.xlsx", headers, items)
 

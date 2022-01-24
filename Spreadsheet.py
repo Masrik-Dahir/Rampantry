@@ -77,6 +77,7 @@ def ele(url: str):
         elif "Contact" in phrase[:20]:
             elements.insert(4, phrase)
 
+
     try:
         if ("Description" in elements[4]):
             elements.insert(4, elements[3])
@@ -107,17 +108,21 @@ def excel():
         'address': 'Address',
         'description': 'Description',
         'contract': 'Contract',
+        'lat': 'Latitude',
+        'lon': 'Longitude'
     }
 
-    urls = url()
+    urls = url()[:10]
     n = 0
     for i in urls:
         n += 1
         elements = ele(i)
+        elements.insert(5, find_address(i)[0])
+        elements.insert(6, find_address(i)[1])
         elements = none_element(elements)
         print(elements)
         items.append({'id': n, 'name': elements[0], 'type': elements[1], 'address': elements[2],
-                      'description': elements[3], 'contract': elements[4]})
+                      'description': elements[3], 'contract': elements[4], 'lat': elements[5], 'lon': elements[6]})
 
     create_xlsx_file("my-xlsx-file.xlsx", headers, items)
 

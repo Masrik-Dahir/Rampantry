@@ -119,14 +119,14 @@ def excel():
 
     }
 
-    urls = url()[:10]
+    urls = url()
     n = 0
     for i in urls:
         n += 1
         elements = ele(i)
         Latitude = find_address(i)[0]
         Longitude = find_address(i)[1]
-        # print(i)
+        print(n)
         # print(Latitude + " " + Longitude)
         street, city, state, zipcode = address.find(Latitude, Longitude)
 

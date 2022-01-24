@@ -21,12 +21,12 @@ def find(Latitude, Longitude):
         city = address.get('city', '')
 
     state = address.get('state', '')
-    zipcode = address.get('postcode')
+    zipcode = address.get('postcode', '')
 
-    print('Street : ', street)
-    print('City : ', city)
-    print('State : ', state)
-    print('Zip Code : ', zipcode)
+    # print('Street : ', street)
+    # print('City : ', city)
+    # print('State : ', state)
+    # print('Zip Code : ', zipcode)
     # print(address)
     return street, city, state, zipcode
 

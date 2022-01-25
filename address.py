@@ -4,6 +4,8 @@ from geopy.geocoders import Nominatim
 
 def find(Latitude, Longitude):
     # initialize Nominatim API
+    Latitude = str(round(float(Latitude), 6))
+    Longitude = str(round(float(Longitude), 6))
     geolocator = Nominatim(user_agent="geoapiExercises")
 
     location = geolocator.reverse(Latitude + "," + Longitude)

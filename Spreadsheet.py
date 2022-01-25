@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 import requests
 import address
 
-
 def url():
     url = 'http://mapping.littlefreepantry.org/'
     reqs = requests.get(url)
@@ -95,8 +94,8 @@ def ele(url: str):
 
 
 def none_element(ele):
-    if (len(ele) != 6):
-        for i in range(0, 6 - len(ele)):
+    if (len(ele) != 11):
+        for i in range(0, 11 - len(ele)):
             ele.append("")
     return ele
 
@@ -124,18 +123,27 @@ def excel():
     for i in urls:
         n += 1
         elements = ele(i)
-        Latitude = find_address(i)[0]
-        Longitude = find_address(i)[1]
-        print(n)
-        # print(Latitude + " " + Longitude)
-        street, city, state, zipcode = address.find(Latitude, Longitude)
+        try:
+            Latitude = find_address(i)[0]
+        except:
+            Latitude = ""
 
-        elements.insert(5, Latitude)
-        elements.insert(6, Longitude)
-        elements.insert(7, street)
-        elements.insert(8, city)
-        elements.insert(9, state)
-        elements.insert(10, zipcode)
+        try:
+            Longitude = find_address(i)[1]
+        except:
+            Longitude = ""
+        print(n)
+        print(Latitude + " " + Longitude)
+        if (Longitude != "" or Longitude != ""):
+            street, city, state, zipcode = address.find(Latitude, Longitude)
+            elements.insert(5, Latitude)
+            elements.insert(6, Longitude)
+            elements.insert(7, street)
+            elements.insert(8, city)
+            elements.insert(9, state)
+            elements.insert(10, zipcode)
+
+        print(elements)
 
         elements = none_element(elements)
         # print(elements)

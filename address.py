@@ -13,7 +13,8 @@ def find(Latitude, Longitude):
     address = location.raw['address']
 
     # traverse the data
-    street = address.get('house_number','') + " " + address.get('road','')
+    number = address.get('house_number','')
+    street = address.get('road','')
     city = address.get('county','')
     if city == "":
         city = address.get('suburb', '')
@@ -30,7 +31,7 @@ def find(Latitude, Longitude):
     # print('State : ', state)
     # print('Zip Code : ', zipcode)
     # print(address)
-    return street, city, state, zipcode
+    return number, street, city, state, zipcode
 
 # Latitude = "47.3404659"
 # Longitude = "122.7429631"

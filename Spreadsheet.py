@@ -74,6 +74,7 @@ def ele(url: str):
         elif "Shipping" in phrase[:20]:
             elements.insert(2, phrase)
         elif "Description" in phrase[:20]:
+            phrase = phrase.replace("Description", "")
             elements.insert(3, phrase)
         elif "Contact" in phrase[:20]:
             elements.insert(4, phrase)
@@ -94,8 +95,8 @@ def ele(url: str):
 
 
 def none_element(ele):
-    if (len(ele) != 11):
-        for i in range(0, 11 - len(ele)):
+    if (len(ele) != 12):
+        for i in range(0, 12 - len(ele)):
             ele.append("")
     return ele
 
@@ -111,6 +112,7 @@ def excel():
         'contract': 'Contract',
         'lat': 'Latitude',
         "lon": "Longitude",
+        "number": "House Number",
         'street': 'Street',
         'city': 'County/Suburb/Neighbourhood/City',
         'state': 'State',
@@ -132,16 +134,18 @@ def excel():
             Longitude = find_address(i)[1]
         except:
             Longitude = ""
+
         print(n)
         print(Latitude + " " + Longitude)
-        if (Longitude != "" or Longitude != ""):
-            street, city, state, zipcode = address.find(Latitude, Longitude)
+        if not (Longitude.isdigit() or Longitude.isdigit()):
+            number, street, city, state, zipcode = address.find(Latitude, Longitude)
             elements.insert(5, Latitude)
             elements.insert(6, Longitude)
-            elements.insert(7, street)
-            elements.insert(8, city)
-            elements.insert(9, state)
-            elements.insert(10, zipcode)
+            elements.insert(7, number)
+            elements.insert(8, street)
+            elements.insert(9, city)
+            elements.insert(10, state)
+            elements.insert(11, zipcode)
 
         print(elements)
 
@@ -149,7 +153,8 @@ def excel():
         # print(elements)
         items.append({'id': n, 'name': elements[0], 'type': elements[1], 'address': elements[2],
                       'description': elements[3], 'contract': elements[4], 'lat': elements[5], 'lon': elements[6],
-                      'street': elements[7], 'city': elements[8], 'state': elements[9], 'zipcode': elements[10]})
+                      'number': elements[7],
+                      'street': elements[8], 'city': elements[9], 'state': elements[10], 'zipcode': elements[11]})
 
     create_xlsx_file("my-xlsx-file.xlsx", headers, items)
 

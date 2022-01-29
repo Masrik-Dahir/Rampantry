@@ -59,44 +59,46 @@ def ele(url: str):
         phrase = singleTag.text.replace("Mini Pantry Movement", "").replace("\n", "")
         phrase = str(" ".join(phrase.split()))
         if phrase != "":
-            elements.insert(0, phrase)
+            elements.insert(0, "(NAME) " + phrase)
 
     for singleTag in h1tags:
-        phrase = str(" ".join(singleTag.text.split()))
+        new = " ".join(singleTag.text.split("<td>"))
+        new = new.replace("\n", "").replace("  ", "$^&").replace("Type$^&", "(TYPE) ").replace("Shipping Address$^&",
+                                                                                               "(SHIPPING ADDRESS) ").replace(
+            "Address$^&", "(ADDRESS) ").replace("Description$^&", "(DESCRIPTION) ").replace("Contact$^&",
+                                                                                            "(CONTACT) ").replace("$^&",
+                                                                                                                  "")
+        # print(new)
+        elements.append(new)
 
-        elements.append("")
-        elements.append("")
-        elements.append("")
-        elements.append("")
+    result = []
+    result.insert(0, "")
+    result.insert(1, "")
+    result.insert(2, "")
+    result.insert(3, "")
+    result.insert(4, "")
+    result.insert(5, "")
 
-        if "Type" in phrase[:20]:
-            elements.insert(1, phrase)
-        elif "Shipping" in phrase[:20]:
-            elements.insert(2, phrase)
-        elif "Description" in phrase[:20]:
-            phrase = phrase.replace("Description", "")
-            elements.insert(3, phrase)
-        elif "Contact" in phrase[:20]:
-            elements.insert(4, phrase)
+    for i in range(0, len(elements)):
+        if "(NAME) " in elements[i]:
+            result.insert(0, elements[i].replace("(NAME) ",""))
+        elif "(TYPE) " in elements[i]:
+            result.insert(1, elements[i].replace("(TYPE) ",""))
+        elif "(ADDRESS) " in elements[i]:
+            result.insert(2, elements[i].replace("(ADDRESS) ",""))
+        elif "(DESCRIPTION) " in elements[i]:
+            result.insert(3, elements[i].replace("(DESCRIPTION) ",""))
+        elif "(CONTACT) " in elements[i]:
+            result.insert(4, elements[i].replace("(CONTACT) ",""))
+        elif "(SHIPPING ADDRESS) " in elements[i]:
+            result.insert(5, elements[i].replace("(SHIPPING ADDRESS) ",""))
 
-
-    try:
-        if ("Description" in elements[4]):
-            elements.insert(4, elements[3])
-            elements.insert(3, "")
-    except:
-        print("An exception occurred")
-
-    #         for i in remove:
-    #             phrase = phrase.replace(i,"")
-    #         elements.append(phrase)
-
-    return elements
+    return result
 
 
 def none_element(ele):
-    if (len(ele) != 12):
-        for i in range(0, 12 - len(ele)):
+    if (len(ele) != 14):
+        for i in range(0, 14- len(ele)):
             ele.append("")
     return ele
 
@@ -109,11 +111,13 @@ def excel():
         'type': 'Type',
         'address': 'Address',
         'description': 'Description',
-        'contract': 'Contract',
+        'contract': 'Contact',
+        's_address': 'Shipping Address',
         'lat': 'Latitude',
         "lon": "Longitude",
         "number": "House Number",
         'street': 'Street',
+        'typ': "Type",
         'city': 'County/Suburb/Neighbourhood/City',
         'state': 'State',
         'zipcode': 'Zip Code'
@@ -122,39 +126,42 @@ def excel():
 
     urls = url()
     n = 0
+    # print(urls)
     for i in urls:
         n += 1
         elements = ele(i)
-        try:
-            Latitude = find_address(i)[0]
-        except:
-            Latitude = ""
 
-        try:
-            Longitude = find_address(i)[1]
-        except:
-            Longitude = ""
+        if len(elements) < 6:
+            for k in range(len(elements),7):
+                elements.append("")
+        if len(elements) > 6:
+            for asd in range(len(elements),6,-1):
+                elements = elements[:-1]
+
+
+        print(i)
+        Latitude = find_address(i)[0]
+        Longitude = find_address(i)[1]
 
         print(n)
         print(Latitude + " " + Longitude)
-        if not (Longitude.isdigit() or Longitude.isdigit()):
-            number, street, city, state, zipcode = address.find(Latitude, Longitude)
-            elements.insert(5, Latitude)
-            elements.insert(6, Longitude)
-            elements.insert(7, number)
-            elements.insert(8, street)
-            elements.insert(9, city)
-            elements.insert(10, state)
-            elements.insert(11, zipcode)
+        number, street, typ, city, state, zipcode = address.find(Latitude, Longitude)
+        elements.insert(6, Latitude)
+        elements.insert(7, Longitude)
+        elements.insert(8, number)
+        elements.insert(9, street)
+        elements.insert(10, typ)
+        elements.insert(11, city)
+        elements.insert(12, state)
+        elements.insert(13, zipcode)
 
         print(elements)
 
         elements = none_element(elements)
         # print(elements)
         items.append({'id': n, 'name': elements[0], 'type': elements[1], 'address': elements[2],
-                      'description': elements[3], 'contract': elements[4], 'lat': elements[5], 'lon': elements[6],
-                      'number': elements[7],
-                      'street': elements[8], 'city': elements[9], 'state': elements[10], 'zipcode': elements[11]})
+                      'description': elements[3], 'contract': elements[4], 's_address': elements[5], 'lat': elements[6], 'lon': elements[7], 'number': elements[8],
+                      'street': elements[9], 'typ': elements[10], 'city': elements[11], 'state': elements[12], 'zipcode': elements[13]})
 
     create_xlsx_file("my-xlsx-file.xlsx", headers, items)
 

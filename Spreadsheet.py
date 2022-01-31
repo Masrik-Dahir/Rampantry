@@ -51,8 +51,6 @@ def ele(url: str):
     soup = BeautifulSoup(respons, 'lxml')
     h1tags = soup.find_all('tr')
     elements = []
-    #     remove = ['Type', 'Shipping', 'Description', 'Contact', 'Address']
-
     h1tags_main = soup.find_all('h1')
 
     for singleTag in h1tags_main:

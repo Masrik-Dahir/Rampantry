@@ -17,4 +17,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64  
+      - run: pip install xlsxwriter
+      - run: pip install bs4
+      - run: pip install geopy
       - run: python Spreadsheet.py

@@ -19,6 +19,7 @@ jobs:
           architecture: x64  
       - run: pip install xlsxwriter
       - run: pip install bs4
+      - run: pip install beautifulsoup4
       - run: pip install geopy
       - run: pip install requests
       - run: python Spreadsheet.py
